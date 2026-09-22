@@ -1,0 +1,64 @@
+# udp-relay -- copy to config.toml and edit.
+
+[listen]
+# The address players, clients or peers connect to. This is an address on
+# *this* machine: a VPN adapter, a public interface, or 0.0.0.0 for all of
+# them. The relay waits for it to exist rather than failing at boot, so a VPN
+# that comes up late is fine.
+address = "0.0.0.0"
+port = 7777
+
+[target]
+# Every address the target has ever had, best guess first.
+#
+# This is the point of the whole thing. The target is a machine whose address
+# you do not control -- a VM on a home router, a box on someone else's
+# network, anything on DHCP. List the addresses it has had; the relay asks
+# which one is really there and uses that. Moving house costs one line here,
+# and if the address has been seen before it costs nothing at all.
+candidates = [
+    "192.168.0.42",
+    "192.168.0.27",
+    "192.168.178.190",
+]
+
+port = 7777
+
+# How often to check the target is still where it was. The check is one packet
+# to the address in use; the other candidates are only tried when that one
+# stops answering.
+recheck_seconds = 60
+
+[probe]
+# How to tell whether a candidate is really the target.
+#
+#   none  assume the first candidate is right. For targets that cannot be
+#         probed at all. There is then no failover -- it is a plain relay.
+#   tcp   open a TCP connection on the same port number. Good when the target
+#         also listens on TCP; proves a machine is there, not which one.
+#   udp   send `send_hex` and expect a reply. With `expect_prefix_hex` set, it
+#         also proves the reply is the right protocol.
+#   samp  the SA-MP server query, built in as a worked example of a real one.
+kind = "udp"
+
+timeout = 1.5
+
+# For kind = "udp". Both are hex, both may be empty.
+#   send_hex           what to send. Empty sends an empty datagram, which many
+#                      servers ignore -- give it something the target answers.
+#   expect_prefix_hex  what the reply must start with. Empty accepts any reply.
+send_hex = ""
+expect_prefix_hex = ""
+
+[log]
+# Empty means stdout only, which is what you want under systemd.
+path = ""
+max_bytes = 1000000
+
+[session]
+# A client with nothing to say for this long has its upstream socket closed.
+# It is reopened the moment it says something again; this only stops a socket
+# being held for every address that ever sent one packet.
+idle_seconds = 120
+
+buffer_bytes = 4096
