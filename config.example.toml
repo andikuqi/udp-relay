@@ -38,7 +38,6 @@ recheck_seconds = 60
 #         also listens on TCP; proves a machine is there, not which one.
 #   udp   send `send_hex` and expect a reply. With `expect_prefix_hex` set, it
 #         also proves the reply is the right protocol.
-#   samp  the SA-MP server query, built in as a worked example of a real one.
 kind = "udp"
 
 timeout = 1.5

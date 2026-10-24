@@ -54,23 +54,19 @@ rest are tried just when that one goes quiet. So the steady-state cost is one
 packet a minute, and a target that moves is picked up within a minute of the
 move without restarting anything.
 
-There are four kinds of probe, in order of how much they tell you:
+There are three kinds of probe, in order of how much they tell you:
 
 | kind | what it proves |
 |------|----------------|
 | `none` | nothing. The first candidate is used and there is no failover. |
 | `tcp` | a machine is listening on that port number over TCP. |
 | `udp` | something answered a datagram on that port. |
-| `samp` | the reply is a SA-MP server — a real protocol handshake. |
 
 `udp` with `send_hex` and `expect_prefix_hex` set is the useful general case:
 send whatever your protocol's cheapest request is, and check the reply starts
 the way that protocol's replies start. That is the difference between "a
 machine is there" and "*my* server is there" — which matters, because the
 address that answers might now belong to somebody's printer.
-
-The `samp` kind is built in as a worked example of what a protocol-aware probe
-looks like. Copy its shape for your own.
 
 ## Config
 

@@ -134,25 +134,17 @@ def bind_listener(address: str, port: int, log: Log) -> socket.socket:
 # ---------------------------------------------------------------------------
 # is the target actually there
 # ---------------------------------------------------------------------------
-def samp_query(ip: str, port: int) -> bytes:
-    """The SA-MP 'information' query, kept as a worked example of a real probe.
-
-    A protocol-aware probe is better than a blind one: it tells you the thing
-    you are looking for is on that port, not merely that something is.
-    """
-    return b"SAMP" + bytes(int(x) for x in ip.split(".")) + port.to_bytes(2, "little") + b"i"
-
-
 class Probe:
     """Whether a candidate address is worth sending traffic to.
 
-    Four kinds, in order of how much they tell you:
+    Three kinds, in order of how much they tell you:
 
       none  -- assume the first candidate is right; useful when the target
                cannot be probed at all
       tcp   -- a TCP connect on the same port number
-      udp   -- send something, expect anything back
-      samp  -- the SA-MP query above, and its reply magic
+      udp   -- send something, expect a reply; with an expected prefix it
+               proves the reply speaks the right protocol, not merely that
+               something is on that port
     """
 
     def __init__(self, conf: dict) -> None:
@@ -161,8 +153,8 @@ class Probe:
         self.send = bytes.fromhex(conf["send_hex"]) if conf["send_hex"] else b""
         self.expect = bytes.fromhex(conf["expect_prefix_hex"]) if conf["expect_prefix_hex"] else b""
 
-        if self.kind not in ("none", "tcp", "udp", "samp"):
-            raise ValueError("probe.kind must be none, tcp, udp or samp")
+        if self.kind not in ("none", "tcp", "udp"):
+            raise ValueError("probe.kind must be none, tcp or udp")
 
     def __call__(self, ip: str, port: int) -> bool:
         if self.kind == "none":
@@ -186,14 +178,11 @@ class Probe:
         sock.settimeout(self.timeout)
 
         try:
-            payload = samp_query(ip, port) if self.kind == "samp" else self.send
-            expect = b"SAMP" if self.kind == "samp" else self.expect
-
-            sock.sendto(payload, (ip, port))
+            sock.sendto(self.send, (ip, port))
             data, _ = sock.recvfrom(2048)
 
-            return data.startswith(expect) if expect else True
-        except (OSError, ValueError):
+            return data.startswith(self.expect) if self.expect else True
+        except OSError:
             return False
         finally:
             sock.close()
